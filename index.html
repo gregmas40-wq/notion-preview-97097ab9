@@ -1,0 +1,233 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><script>
+(function(){
+  var __k="3c5a2551-2413-4aa3-98c6-b5aa0316f748";
+  var __a=null;
+  var __preload=null;
+  if(!__k)return;
+  var _f=window.fetch;
+  // S3 URL → file_key 추출 후 __a 매핑 lookup → assets/ 로컬 경로 치환
+  // 응답에 새 signed URL이 와도 같은 file_key면 같은 assets/ → 영구 작동
+  function patchUrls(data){
+    if(!__a)return data;
+    try{
+      var s=JSON.stringify(data);
+      // 응답 안의 모든 S3 URL을 정규식으로 찾고, file_key 추출 → 매핑 lookup
+      s=s.replace(/https:\/\/prod-files-secure\.s3\.amazonaws\.com\/[^"\s<>]+/g,function(url){
+        var m=url.match(/\.amazonaws\.com\/([^?\\]+)/);
+        if(!m)return url;
+        var key=m[1].replace(/\\u002F/g,"/");
+        return __a[key]||url;
+      });
+      return JSON.parse(s);
+    }catch(e){return data;}
+  }
+  function callMisiso(method,path,body){
+    return _f("https://misiso.com/api/notion/deploy-proxy",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({deployKey:__k,path:path,method:method,body:body})
+    }).then(function(r){
+      var status=r.status;
+      return r.json().then(function(data){return {status:status,data:patchUrls(data)};});
+    });
+  }
+  // preload pattern — 페이지 로드와 병렬로 정적 fetch 호출 미리 시작
+  var __preloadCache={};
+  if(__preload){
+    for(var i=0;i<__preload.length;i++){
+      (function(c){
+        var key=c.method+":"+c.path+":"+(c.body?JSON.stringify(c.body):"");
+        __preloadCache[key]=callMisiso(c.method,c.path,c.body);
+      })(__preload[i]);
+    }
+  }
+  window.fetch=function(url,opts){
+    var u=typeof url==="string"?url:String(url);
+    if(!u.startsWith("/api/notion/"))return _f.apply(this,arguments);
+    var path=u.slice("/api/notion".length);
+    var method=(opts&&opts.method)||"GET";
+    var body;
+    try{body=opts&&opts.body?JSON.parse(opts.body):undefined;}catch(e){body=opts&&opts.body;}
+    var ck=method+":"+path+":"+(body?JSON.stringify(body):"");
+    var promise=__preloadCache[ck];
+    if(promise){delete __preloadCache[ck];}
+    else{promise=callMisiso(method,path,body);}
+    return promise.then(function(res){
+      return new Response(JSON.stringify(res.data),{
+        status:res.status,
+        headers:{"Content-Type":"application/json"}
+      });
+    });
+  };
+})();
+</script>
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://misiso.com" crossorigin/>
+<meta property="og:title" content="페르소나 교육 — 팀원용"/>
+<meta property="og:description" content="페르소나 교육 — 팀원용"/>
+<title>페르소나 교육 — 팀원용</title>
+<meta name="description" content="페르소나 교육 — 팀원용"/>
+<meta property="og:image" content="https://gregmas40-wq.github.io/notion-preview-97097ab9/og-image-00on4ac2.png"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="630"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://gregmas40-wq.github.io/notion-preview-97097ab9/og-image-00on4ac2.png"/>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'6'%20fill%3D'%236366f1'%2F%3E%3Ctext%20x%3D'16'%20y%3D'22'%20text-anchor%3D'middle'%20font-size%3D'18'%20fill%3D'white'%20font-family%3D'sans-serif'%3E%ED%8E%98%3C%2Ftext%3E%3C%2Fsvg%3E"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+:root{
+  --bg:#f7fafc;
+  --panel:#ffffff;
+  --text:#0f172a;
+  --muted:#64748b;
+  --brand:#6366f1;
+  --brand2:#10b981;
+  --warn:#f59e0b;
+  --danger:#ef4444;
+  --border:#e2e8f0;
+  --shadow:0 12px 30px rgba(2,6,23,.08);
+}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  color:var(--text);
+  background:
+    radial-gradient(1200px 700px at 20% 0%, rgba(99,102,241,.16), transparent 60%),
+    radial-gradient(900px 600px at 90% 10%, rgba(16,185,129,.12), transparent 55%),
+    var(--bg);
+}
+
+.wrap{max-width:1100px;margin:0 auto;padding:28px 18px 60px;}
+.header{
+  display:flex; gap:14px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap;
+  background:rgba(255,255,255,.86);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:18px;
+  box-shadow:var(--shadow);
+  backdrop-filter: blur(10px);
+}
+.h-left{display:flex; gap:12px; align-items:flex-start;}
+.badge{
+  width:44px;height:44px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg, rgba(99,102,241,.18), rgba(16,185,129,.18));
+  border:1px solid rgba(99,102,241,.25);
+  font-size:22px;
+}
+.h-title{margin:0;font-size:20px;line-height:1.25;}
+.h-sub{margin:6px 0 0 0;color:var(--muted);font-size:13px;line-height:1.5;}
+.btn{
+  border:1px solid var(--border);
+  background:var(--panel);
+  padding:10px 12px;
+  border-radius:12px;
+  cursor:pointer;
+  font-weight:900;
+  color:#0f172a;
+  transition: transform .08s ease, box-shadow .12s ease, border-color .12s ease;
+  box-shadow: 0 6px 16px rgba(2,6,23,.06);
+}
+.btn:hover{transform: translateY(-1px); border-color: rgba(99,102,241,.35);}
+.btn.primary{
+  background: linear-gradient(135deg, rgba(99,102,241,.92), rgba(16,185,129,.92));
+  color:#fff;border-color:transparent;
+}
+
+.main{margin-top:18px;display:grid;grid-template-columns: 300px 1fr;gap:16px;}
+@media (max-width: 900px){ .main{grid-template-columns:1fr;} }
+
+.side{
+  background:rgba(255,255,255,.82);
+  border:1px solid var(--border);
+  border-radius:18px;
+  box-shadow:var(--shadow);
+  padding:14px;
+  backdrop-filter: blur(10px);
+}
+.side-title{margin:4px 0 10px 0;font-size:14px;color:var(--muted);font-weight:1000;}
+.nav{display:flex;flex-direction:column;gap:8px;}
+.nav button{
+  text-align:left;width:100%;
+  border:1px solid var(--border);
+  background:var(--panel);
+  border-radius:14px;
+  padding:10px;
+  cursor:pointer;
+  font-weight:1000;
+  display:flex;gap:10px;align-items:center;
+}
+.nav button .ico{width:22px;text-align:center;}
+.nav button .hint{margin-left:auto;color:var(--muted);font-size:12px;font-weight:1000;}
+.nav button.active{
+  border-color: rgba(99,102,241,.55);
+  box-shadow: 0 10px 22px rgba(99,102,241,.10);
+  background: linear-gradient(180deg, rgba(99,102,241,.09), rgba(255,255,255,.9));
+}
+
+.panel{
+  background:rgba(255,255,255,.88);
+  border:1px solid var(--border);
+  border-radius:18px;
+  box-shadow:var(--shadow);
+  padding:16px 16px 20px 16px;
+  backdrop-filter: blur(10px);
+}
+.section-title{display:flex;align-items:center;gap:10px;margin:0 0 10px 0;font-size:18px;}
+.pill{
+  font-size:12px;font-weight:1000;
+  padding:6px 10px;border-radius:999px;
+  border:1px solid rgba(99,102,241,.25);
+  background:rgba(99,102,241,.10);
+  color:#3730a3;
+}
+.card{border:1px solid var(--border);border-radius:16px;background:var(--panel);padding:12px;}
+.card h4{margin:0 0 6px 0;font-size:14px;}
+.card p{margin:0;color:var(--muted);font-size:13px;line-height:1.55;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media (max-width: 900px){ .grid2{grid-template-columns:1fr;} }
+
+.kv{
+  display:flex;gap:10px;align-items:flex-start;
+  padding:10px 12px;
+  border:1px dashed rgba(99,102,241,.35);
+  background: rgba(99,102,241,.06);
+  border-radius:14px;
+  margin:10px 0;
+}
+.kv .k-ico{width:22px;text-align:center;}
+.kv .k-title{font-weight:1000;}
+.kv .k-desc{color:var(--muted);font-weight:900;font-size:13px;line-height:1.5;}
+
+.callout{
+  border-radius:16px;
+  padding:12px;
+  border:1px solid var(--border);
+  background: rgba(245,158,11,.10);
+}
+.callout strong{color:#7c2d12;}
+.list{margin:8px 0 0 0; padding-left:18px; color:var(--muted); font-weight:900;}
+.list li{margin:6px 0; line-height:1.55;}
+.mini{font-size:12px;color:var(--muted);font-weight:1000;margin-top:6px;}
+.hl{font-weight:1000;}
+.hl.brand{color:#3730a3;}
+.hl.ok{color:#047857;}
+.hl.warn{color:#b45309;}
+.hl.danger{color:#b91c1c;}
+hr.sep{border:0;border-top:1px solid var(--border);margin:14px 0;}
+.actions{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;}
+.actions .btn{flex:1;min-width:140px;}
+</style>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script>if(window.Babel)Babel.disableScriptTags=true;</script>
+</head><body><div id="root"></div>
+<rect width='32' height='32' rx='7' fill='%236366f1'/><text x='16' y='22' text-anchor='middle' font-size='18' fill='white' font-family='sans-serif'>팀</text></svg>"><script type="module">
+var __np_strip_imports=function(){return{visitor:{ImportDeclaration:function(path){var src=path.node.source.value;if(src.indexOf("./")===0||src.indexOf("../")===0)path.remove();},ExportDefaultDeclaration:function(path){var decl=path.node.declaration;if(decl.type==="FunctionDeclaration"||decl.type==="ClassDeclaration"){path.replaceWith(decl);}else{path.replaceWith({type:"VariableDeclaration",kind:"var",declarations:[{type:"VariableDeclarator",id:{type:"Identifier",name:"_default"},init:decl}]});}},ExportNamedDeclaration:function(path){if(path.node.declaration){path.replaceWith(path.node.declaration);}else{path.remove();}},ExportAllDeclaration:function(path){path.remove();}}};};
+var __np_dedupe_top_consts=function(){var _s={};return{visitor:{VariableDeclaration:function(p){if(p.parent.type!=="Program")return;if(p.node.kind!=="const"&&p.node.kind!=="let")return;var kept=[];for(var i=0;i<p.node.declarations.length;i++){var d=p.node.declarations[i];var n=d.id&&d.id.type==="Identifier"?d.id.name:null;if(n&&_s[n]){}else{if(n)_s[n]=true;kept.push(d);}}if(kept.length===0){p.remove();}else{p.node.declarations=kept;}}}}};
+var __np_jsx_decode=function(){function _d(v){v=v.replace(/\\u\{([0-9a-fA-F]+)\}/g,function(_,h){return String.fromCodePoint(parseInt(h,16));});v=v.replace(/\\u([0-9a-fA-F]{4})/g,function(_,h){return String.fromCharCode(parseInt(h,16));});return v;}return{visitor:{JSXText:function(p){p.node.value=_d(p.node.value);},StringLiteral:function(p){if(!p.parent||p.parent.type!=="JSXAttribute")return;p.node.value=_d(p.node.value);}}}};
+var __code="import React from 'https://esm.sh/react';\nimport ReactDOM from 'https://esm.sh/react-dom/client';\nimport { useMemo, useState } from 'https://esm.sh/react';\n\nconst SECTIONS = [\n  { key:'intro', label:'0. 왜 페르소나?', icon:'🥸', hint:'시작' },\n  { key:'world', label:'1. 우리 세계관', icon:'🌍', hint:'정체성' },\n  { key:'core', label:'2. 핵심 환자', icon:'🎯', hint:'누구?' },\n  { key:'not', label:'3. 비핵심', icon:'🚫', hint:'주의' },\n  { key:'team', label:'4. 팀원 정체성', icon:'🧑‍🤝‍🧑', hint:'태도' },\n  { key:'talk', label:'5. 말하기', icon:'🗣️', hint:'리드' },\n  { key:'quiz', label:'6. OX 10', icon:'📝', hint:'마지막' },\n];\n\nconst QUIZ = [\n  { q:'페르소나는 “아무 환자나 다 만족시키자”는 뜻이다.', a:false, exp:'반대예요. “딱 맞는 소수”에 집중하는 기준입니다.' },\n  { q:'우리는 증상만 보고 끝내지 않고, 환자의 삶까지 더 나아지게 돕는다.', a:true, exp:'세계관 핵심 문장입니다.' },\n  { q:'우리 핵심 환자는 “계획을 누가 짜주면 편한 사람”일 수 있다.', a:true, exp:'리드형 커뮤니케이션이 잘 맞는 분들입니다.' },\n  { q:'비핵심 청중에게는 우리 방식이 부담스러울 수 있다.', a:true, exp:'그분들께는 만족을 드리기 어려울 수 있어요.' },\n  { q:'팀원의 역할은 의료 판단이 아니라, 계획대로 차분히 안내하고 보살피는 조력자이다.', a:true, exp:'팀원 정체성 문장입니다.' },\n  { q:'환자와 말할 때는 이성(논리)과 감정(공감)을 같이 써야 한다.', a:true, exp:'둘 다 필요합니다.' },\n  { q:'“어떻게 하실래요?”라고 던져놓는 것보다, 계획을 제시하며 리드하는 것이 도움이 된다.', a:true, exp:'선택 부담을 줄여줍니다.' },\n  { q:'진짜 관심은 “기억하기/일상 질문/표정 언급” 같은 작은 행동으로 보인다.', a:true, exp:'원문에 있는 “진짜 관심” 파트입니다.' },\n  { q:'업셀링은 억지로 권해야만 생긴다.', a:false, exp:'억지 추천이 아니라, 진짜 관심 + 필요 제안이 핵심입니다.' },\n  { q:'팀원이 하는 말은 환자에게 그대로 믿음으로 전달될 수 있다.', a:true, exp:'의료 현장은 신뢰 구조라 영향이 큽니다.' },\n];\n\nfunction clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }\n\nfunction Quiz(){\n  const total = QUIZ.length;\n  const [idx, setIdx] = useState(0);\n  const [picked, setPicked] = useState(null);\n  const [score, setScore] = useState(0);\n\n  const q = QUIZ[idx];\n  const answered = picked !== null;\n  const ok = answered ? ((picked === 'O') === q.a) : null;\n  const isLast = idx === total - 1;\n\n  function choose(c){\n    if(answered) return;\n    setPicked(c);\n    const correct = ((c === 'O') === q.a);\n    if(correct) setScore(s => s + 1);\n  }\n  function next(){\n    if(!answered) return;\n    setIdx(i => clamp(i+1, 0, total-1));\n    setPicked(null);\n  }\n  function restart(){\n    setIdx(0); setPicked(null); setScore(0);\n  }\n\n  return (\n    <div>\n      <h2 className=\"section-title\">📝 OX 퀴즈(10문항) <span className=\"pill\">팀원용</span></h2>\n\n      <div className=\"kv\">\n        <div className=\"k-ico\">🎯</div>\n        <div>\n          <div className=\"k-title\">목표</div>\n          <div className=\"k-desc\">핵심 문장을 “내 말”처럼 말할 수 있게 만들기</div>\n          <div className=\"mini\">점수: {score} / {total} · {idx + 1} / {total}</div>\n        </div>\n      </div>\n\n      <div className=\"card\">\n        <div className=\"mini\">문항 {idx + 1}</div>\n        <h4>Q. {q.q}</h4>\n\n        <div className=\"actions\">\n          <button className=\"btn\" onClick={()=>choose('O')} disabled={answered}>⭕ O</button>\n          <button className=\"btn\" onClick={()=>choose('X')} disabled={answered}>❌ X</button>\n        </div>\n\n        {answered && (\n          <div className=\"callout\">\n            <strong>{ok ? '정답! ✅' : '오답! 🧩'}</strong>\n            <div className=\"mini\">해설: {q.exp}</div>\n            <div className=\"actions\">\n              {!isLast ? (\n                <button className=\"btn primary\" onClick={next}>다음 →</button>\n              ) : (\n                <button className=\"btn primary\" onClick={restart}>처음부터 다시</button>\n              )}\n            </div>\n          </div>\n        )}\n      </div>\n    </div>\n  );\n}\n\nfunction Intro({ go }){\n  return (\n    <div>\n      <h2 className=\"section-title\">🥸 페르소나 교육(팀원용) <span className=\"pill\">중학생 버전</span></h2>\n\n      <div className=\"kv\">\n        <div className=\"k-ico\">✅</div>\n        <div>\n          <div className=\"k-title\">페르소나를 한 문장으로</div>\n          <div className=\"k-desc\">“우리가 정말 잘 도와줄 수 있는 사람을 정확히 떠올리는 것”</div>\n          <div className=\"mini\">숫자(나이/성별)보다 “상황/마음/결정 방식”이 중요합니다.</div>\n        </div>\n      </div>\n\n      <div className=\"grid2\">\n        <div className=\"card\">\n          <h4>왜 팀원이 알아야 할까?</h4>\n          <p>같은 말이라도 “누구에게 말하느냐”에 따라 환자가 <span className=\"hl ok\">안심</span>하거나 <span className=\"hl danger\">불안</span>해져요.</p>\n        </div>\n        <div className=\"card\">\n          <h4>오늘 끝나면 가능한 것</h4>\n          <p>환자에게 20초로: “우리 병원은 이런 분을 이렇게 도와요”를 말할 수 있어요.</p>\n        </div>\n      </div>\n\n      <hr className=\"sep\"/>\n      <button className=\"btn primary\" onClick={()=>go('world')}>1단계로 시작 →</button>\n    </div>\n  );\n}\n\nfunction World(){\n  return (\n    <div>\n      <h2 className=\"section-title\">🌍 우리 세계관 <span className=\"pill\">핵심</span></h2>\n\n      <div className=\"card\">\n        <h4>한 줄 정체성</h4>\n        <p>“틀어진 균형을 바로잡아 환자의 <span className=\"hl brand\">더 나은 일상</span>을 돌려준다.”</p>\n      </div>\n\n      <div className=\"callout\">\n        <strong>우리가 하는 진료(쉽게)</strong>\n        <ul className=\"list\">\n          <li>증상만 “잠깐” 없애는 게 아니라</li>\n          <li>원인/생활/계획까지 같이 보고</li>\n          <li>그 사람에게 맞춘 치료를 한다</li>\n        </ul>\n      </div>\n\n      <div className=\"kv\">\n        <div className=\"k-ico\">⚠️</div>\n        <div>\n          <div className=\"k-title\">팀원이 기억할 한 문장</div>\n          <div className=\"k-desc\">“우리는 환자의 삶이 바뀌게 돕는 사람들이다.”</div>\n        </div>\n      </div>\n    </div>\n  );\n}\n\nfunction CorePatient(){\n  return (\n    <div>\n      <h2 className=\"section-title\">🎯 핵심 환자(우리가 잘 도울 수 있는 분) <span className=\"pill\">요약</span></h2>\n\n      <div className=\"grid2\">\n        <div className=\"card\">\n          <h4>이런 분(예: 지수 43세)</h4>\n          <ul className=\"list\">\n            <li>정보가 너무 많아 혼란</li>\n            <li>누가 “계획”을 짜주면 편함</li>\n            <li>따뜻한 말 한마디에 마음이 놓임</li>\n          </ul>\n        </div>\n        <div className=\"card\">\n          <h4>결정 기준</h4>\n          <ul className=\"list\">\n            <li>최저가보다 “신뢰”</li>\n            <li>프리미엄/맞춤형에 투자 의지</li>\n            <li>병원 분위기/설명 방식 중요</li>\n          </ul>\n        </div>\n      </div>\n\n      <div className=\"callout\">\n        <strong>팀원 멘트(짧게)</strong>\n        <div className=\"mini\">“여기서는 ○○님 몸 상태에 맞춰 계획을 먼저 정리해드리고, 그 계획대로 같이 가요.”</div>\n      </div>\n    </div>\n  );\n}\n\nfunction NotCore(){\n  return (\n    <div>\n      <h2 className=\"section-title\">🚫 비핵심 청중 <span className=\"pill\">주의</span></h2>\n\n      <div className=\"card\">\n        <h4>이런 분은 우리 방식이 부담일 수 있어요</h4>\n        <ul className=\"list\">\n          <li>치료자가 리드하는 방식이 부담</li>\n          <li>초기 집중 치료/규칙 방문이 어려움</li>\n          <li>패키지 권유 자체에 거부감</li>\n          <li>최선보다 최저가 우선</li>\n        </ul>\n      </div>\n\n      <div className=\"callout\">\n        <strong>팀원 포인트</strong>\n        <div className=\"mini\">억지로 설득하지 말고, 친절 + 기본 안내를 하고 의료진에게 공유합니다.</div>\n      </div>\n    </div>\n  );\n}\n\nfunction TeamIdentity(){\n  return (\n    <div>\n      <h2 className=\"section-title\">🧑‍🤝‍🧑 팀원 정체성 <span className=\"pill\">내 역할</span></h2>\n\n      <div className=\"grid2\">\n        <div className=\"card\">\n          <h4>팀원은 누구?</h4>\n          <p>차분하게 상황을 살피고, 치료 계획에 따라 환자를 보살피는 <span className=\"hl brand\">조력자</span>.</p>\n        </div>\n        <div className=\"card\">\n          <h4>환자가 느껴야 할 메시지</h4>\n          <p>“이 사람들은 정말 나를 고쳐주려고 하는구나.”</p>\n        </div>\n      </div>\n\n      <div className=\"kv\">\n        <div className=\"k-ico\">📌</div>\n        <div>\n          <div className=\"k-title\">팀원이 꼭 하는 행동 3개</div>\n          <div className=\"k-desc\">\n            1) 계획을 짧게 정리<br/>\n            2) 환자 불안을 읽고 공감<br/>\n            3) 중요한 정보는 의료진에게 공유\n          </div>\n        </div>\n      </div>\n    </div>\n  );\n}\n\nfunction Talking(){\n  return (\n    <div>\n      <h2 className=\"section-title\">🗣️ 계획된 말하기(팀원용) <span className=\"pill\">실전</span></h2>\n\n      <div className=\"card\">\n        <h4>말의 3가지(중학생 버전)</h4>\n        <ul className=\"list\">\n          <li><span className=\"hl brand\">이성</span>: “왜 그런지” 설명</li>\n          <li><span className=\"hl ok\">감정</span>: “많이 힘드셨죠” 공감</li>\n          <li><span className=\"hl warn\">리드</span>: “그래서 이렇게 해볼게요” 계획 제시</li>\n        </ul>\n      </div>\n\n      <div className=\"callout\">\n        <strong>금지 멘트</strong>\n        <ul className=\"list\">\n          <li>“그건 뭐 다 그래요.”</li>\n          <li>“그건 스트레스 때문이에요.”</li>\n          <li>“그건 병은 아닌데요.”</li>\n        </ul>\n      </div>\n\n      <div className=\"kv\">\n        <div className=\"k-ico\">✨</div>\n        <div>\n          <div className=\"k-title\">진짜 관심, 이렇게 보이게</div>\n          <div className=\"k-desc\">\n            - 일상 질문: “업무 중 오래 앉아계세요?”<br/>\n            - 기억하기: “지난주보다 덜 아프셨죠?”<br/>\n            - 상태 언급: “오늘 많이 지쳐 보이세요.”\n          </div>\n        </div>\n      </div>\n    </div>\n  );\n}\n\nfunction App(){\n  const [active, setActive] = useState('intro');\n  const current = useMemo(()=> SECTIONS.find(s=>s.key===active) || SECTIONS[0], [active]);\n\n  const Comp = useMemo(()=>{\n    switch(active){\n      case 'intro': return () => <Intro go={setActive}/>;\n      case 'world': return World;\n      case 'core': return CorePatient;\n      case 'not': return NotCore;\n      case 'team': return TeamIdentity;\n      case 'talk': return Talking;\n      case 'quiz': return Quiz;\n      default: return () => <Intro go={setActive}/>;\n    }\n  }, [active]);\n\n  return (\n    <div className=\"wrap\">\n      <div className=\"header\">\n        <div className=\"h-left\">\n          <div className=\"badge\">🧑‍🤝‍🧑</div>\n          <div>\n            <h1 className=\"h-title\">페르소나 교육 — 팀원용</h1>\n            <p className=\"h-sub\">한 페이지로 이해/습득 · 밝은 화면 · 강조 포인트 · 마지막 퀴즈</p>\n          </div>\n        </div>\n      </div>\n\n      <div className=\"main\">\n        <aside className=\"side\">\n          <div className=\"side-title\">📚 목차(순서대로)</div>\n          <div className=\"nav\">\n            {SECTIONS.map(s => (\n              <button key={s.key} className={active===s.key?'active':''} onClick={()=>setActive(s.key)}>\n                <span className=\"ico\">{s.icon}</span>\n                <span>{s.label}</span>\n                <span className=\"hint\">{s.hint}</span>\n              </button>\n            ))}\n          </div>\n          <div className=\"mini\">TIP: 신입 팀원은 위에서 아래 순서대로만 진행.</div>\n        </aside>\n\n        <main className=\"panel\" aria-label={`section-${current.key}`}>\n          <Comp/>\n        </main>\n      </div>\n    </div>\n  );\n}\n\nReactDOM.createRoot(document.getElementById('root')).render(<App/>);";
+try{var __result=Babel.transform(__code,{filename:"app.tsx",presets:["react","typescript"],plugins:[__np_strip_imports,__np_dedupe_top_consts,__np_jsx_decode],generatorOpts:{jsescOption:{minimal:true}},sourceType:"module"});try{var __s=document.createElement("script");__s.type="module";__s.textContent=__result.code;document.head.appendChild(__s);}catch(runErr){console.error("[user code runtime] "+(runErr.message||runErr)+"\n"+(runErr.stack||""));}}catch(transErr){var lm=(transErr.message||"").match(/\((\d+):(\d+)\)/);var ln=lm?parseInt(lm[1],10):0;var cx="";if(ln>0){var ls=__code.split("\n");var s=Math.max(0,ln-3),e=Math.min(ls.length,ln+2);cx="\n--- 사용자 코드 주변 ---\n"+ls.slice(s,e).map(function(l,i){return (s+i+1)+": "+l;}).join("\n");}console.error("[Babel transform 실패] "+(transErr.message||transErr)+cx);}
+</script>
+</body></html>
